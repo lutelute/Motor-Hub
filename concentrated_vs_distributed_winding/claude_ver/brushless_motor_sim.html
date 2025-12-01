@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブラシレスモータ - コイル巻き方シミュレーター</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+        select, input[type="range"] {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        select {
+            background: white;
+            cursor: pointer;
+        }
+        input[type="range"] {
+            cursor: pointer;
+        }
+        .value-display {
+            display: inline-block;
+            margin-left: 10px;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .canvas-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            background: white;
+            width: 100%;
+            height: 300px;
+        }
+        .motor-view {
+            grid-column: 1 / -1;
+            height: 400px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .comparison-card {
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #ddd;
+        }
+        .comparison-card h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .comparison-card ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .comparison-card li {
+            margin: 5px 0;
+            color: #555;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 ブラシレスモータ コイル巻き方シミュレーター</h1>
+        <p class="subtitle">コイルの巻き方がモータ特性に及ぼす影響を体感しよう!</p>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>巻き方タイプ</label>
+                <select id="windingType">
+                    <option value="concentrated">集中巻き (Concentrated)</option>
+                    <option value="distributed">分布巻き (Distributed)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>スロット数 <span class="value-display" id="slotDisplay">12</span></label>
+                <input type="range" id="slots" min="9" max="18" step="3" value="12">
+            </div>
+            <div class="control-group">
+                <label>極数 <span class="value-display" id="poleDisplay">10</span></label>
+                <input type="range" id="poles" min="8" max="14" step="2" value="10">
+            </div>
+            <div class="control-group">
+                <label>回転速度 (rpm) <span class="value-display" id="speedDisplay">1000</span></label>
+                <input type="range" id="speed" min="100" max="3000" step="100" value="1000">
+            </div>
+            <div class="control-group">
+                <label>負荷トルク (%) <span class="value-display" id="loadDisplay">50</span></label>
+                <input type="range" id="load" min="0" max="100" step="10" value="50">
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="motorCanvas" class="motor-view"></canvas>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="windingPatternCanvas" class="motor-view"></canvas>
+        </div>
+
+        <div class="canvas-container">
+            <canvas id="torqueCanvas"></canvas>
+            <canvas id="backemfCanvas"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-label">平均トルク</div>
+                <div class="stat-value" id="avgTorque">0.85</div>
+                <div class="stat-label">Nm</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">トルクリップル</div>
+                <div class="stat-value" id="torqueRipple">15.2</div>
+                <div class="stat-label">%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">逆起電力THD</div>
+                <div class="stat-value" id="backemfTHD">8.5</div>
+                <div class="stat-label">%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">巻線係数</div>
+                <div class="stat-value" id="windingFactor">0.933</div>
+                <div class="stat-label">-</div>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <div class="comparison-card">
+                <h4>🎯 集中巻き (Concentrated Winding)</h4>
+                <ul>
+                    <li>✅ <span class="highlight">巻線が簡単</span> - 製造コスト低</li>
+                    <li>✅ 短い端末長 - 銅損減少</li>
+                    <li>✅ スロット充填率が高い</li>
+                    <li>⚠️ トルクリップルが大きい (15-25%)</li>
+                    <li>⚠️ 高調波成分が多い</li>
+                    <li>💡 小型モータ、コストパフォーマンス重視</li>
+                </ul>
+            </div>
+            <div class="comparison-card">
+                <h4>🎯 分布巻き (Distributed Winding)</h4>
+                <ul>
+                    <li>✅ <span class="highlight">トルクリップル小</span> (5-10%)</li>
+                    <li>✅ 正弦波に近い逆起電力</li>
+                    <li>✅ 高調波成分が少ない</li>
+                    <li>✅ 効率が高い</li>
+                    <li>⚠️ 巻線が複雑 - 製造コスト高</li>
+                    <li>💡 高性能モータ、静粛性重視</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>📚 ポイント解説</h3>
+            <p><strong>トルクリップル:</strong> モータの回転トルクの変動。小さいほど滑らかな回転が得られます。</p>
+            <p><strong>逆起電力THD:</strong> Total Harmonic Distortion。正弦波からのずれを示し、小さいほど高調波が少なく効率的です。</p>
+            <p><strong>巻線係数:</strong> コイル配置による起磁力の利用効率。1に近いほど効率的です。</p>
+            <p><strong>集中巻き vs 分布巻き:</strong> 集中巻きは1つのティース(歯)に集中して巻くのに対し、分布巻きは複数のスロットに分散して巻きます。</p>
+        </div>
+    </div>
+
+    <script>
+        // パラメータ
+        let params = {
+            windingType: 'concentrated',
+            slots: 12,
+            poles: 10,
+            speed: 1000,
+            load: 50,
+            angle: 0
+        };
+
+        // キャンバス取得
+        const motorCanvas = document.getElementById('motorCanvas');
+        const windingPatternCanvas = document.getElementById('windingPatternCanvas');
+        const torqueCanvas = document.getElementById('torqueCanvas');
+        const backemfCanvas = document.getElementById('backemfCanvas');
+        const motorCtx = motorCanvas.getContext('2d');
+        const windingPatternCtx = windingPatternCanvas.getContext('2d');
+        const torqueCtx = torqueCanvas.getContext('2d');
+        const backemfCtx = backemfCanvas.getContext('2d');
+
+        // キャンバスサイズ設定
+        function resizeCanvas() {
+            motorCanvas.width = motorCanvas.offsetWidth;
+            motorCanvas.height = motorCanvas.offsetHeight;
+            windingPatternCanvas.width = windingPatternCanvas.offsetWidth;
+            windingPatternCanvas.height = windingPatternCanvas.offsetHeight;
+            torqueCanvas.width = torqueCanvas.offsetWidth;
+            torqueCanvas.height = torqueCanvas.offsetHeight;
+            backemfCanvas.width = backemfCanvas.offsetWidth;
+            backemfCanvas.height = backemfCanvas.offsetHeight;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // イベントリスナー
+        document.getElementById('windingType').addEventListener('change', (e) => {
+            params.windingType = e.target.value;
+            update();
+        });
+        document.getElementById('slots').addEventListener('input', (e) => {
+            params.slots = parseInt(e.target.value);
+            document.getElementById('slotDisplay').textContent = params.slots;
+            update();
+        });
+        document.getElementById('poles').addEventListener('input', (e) => {
+            params.poles = parseInt(e.target.value);
+            document.getElementById('poleDisplay').textContent = params.poles;
+            update();
+        });
+        document.getElementById('speed').addEventListener('input', (e) => {
+            params.speed = parseInt(e.target.value);
+            document.getElementById('speedDisplay').textContent = params.speed;
+            update();
+        });
+        document.getElementById('load').addEventListener('input', (e) => {
+            params.load = parseInt(e.target.value);
+            document.getElementById('loadDisplay').textContent = params.load;
+            update();
+        });
+
+        // 巻線パターン2D展開図の描画
+        function drawWindingPattern() {
+            const ctx = windingPatternCtx;
+            const width = windingPatternCanvas.width;
+            const height = windingPatternCanvas.height;
+            const padding = 60;
+            const slotWidth = Math.min((width - padding * 2) / params.slots, 80);
+            const slotHeight = 120;
+            const startX = (width - slotWidth * params.slots) / 2;
+            const centerY = height / 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // タイトル
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 18px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('巻線パターン展開図 (2D)', width / 2, 35);
+            
+            ctx.font = '14px Arial';
+            ctx.fillText(
+                params.windingType === 'concentrated' ? '集中巻き - 各スロット1相' : '分布巻き - 複数スロットに分散',
+                width / 2,
+                60
+            );
+
+            const phaseColors = ['#f44336', '#2196f3', '#4caf50'];
+            const phaseNames = ['U', 'V', 'W'];
+
+            if (params.windingType === 'concentrated') {
+                // 集中巻き - 各スロット1相ずつ
+                for (let i = 0; i < params.slots; i++) {
+                    const x = startX + i * slotWidth;
+                    const phase = i % 3;
+                    
+                    // スロット枠
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 2;
+                    ctx.fillStyle = '#eee';
+                    ctx.fillRect(x, centerY - slotHeight / 2, slotWidth - 5, slotHeight);
+                    ctx.strokeRect(x, centerY - slotHeight / 2, slotWidth - 5, slotHeight);
+                    
+                    // コイル (上層と下層)
+                    const coilHeight = slotHeight * 0.35;
+                    
+                    // 上層コイル (行き)
+                    ctx.fillStyle = phaseColors[phase];
+                    ctx.fillRect(x + 5, centerY - slotHeight / 2 + 10, slotWidth - 15, coilHeight);
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x + 5, centerY - slotHeight / 2 + 10, slotWidth - 15, coilHeight);
+                    
+                    // 矢印 (電流方向 - 上向き)
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('⊙', x + slotWidth / 2, centerY - slotHeight / 2 + 10 + coilHeight / 2);
+                    
+                    // 下層コイル (帰り)
+                    ctx.fillStyle = phaseColors[phase];
+                    ctx.globalAlpha = 0.6;
+                    ctx.fillRect(x + 5, centerY + slotHeight / 2 - 10 - coilHeight, slotWidth - 15, coilHeight);
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(x + 5, centerY + slotHeight / 2 - 10 - coilHeight, slotWidth - 15, coilHeight);
+                    ctx.globalAlpha = 1;
+                    
+                    // 矢印 (電流方向 - 下向き)
+                    ctx.fillStyle = 'white';
+                    ctx.fillText('⊗', x + slotWidth / 2, centerY + slotHeight / 2 - 10 - coilHeight / 2);
+                    
+                    // 相名
+                    ctx.fillStyle = phaseColors[phase];
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText(phaseNames[phase], x + slotWidth / 2, centerY);
+                    
+                    // スロット番号
+                    ctx.fillStyle = '#333';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(`#${i + 1}`, x + slotWidth / 2, centerY + slotHeight / 2 + 25);
+                }
+                
+                // 説明
+                ctx.fillStyle = '#333';
+                ctx.font = '13px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('⊙: 紙面手前向き電流', 20, height - 60);
+                ctx.fillText('⊗: 紙面奥向き電流', 20, height - 40);
+                ctx.fillText('特徴: シンプル、低コスト、トルクリップル大', 20, height - 20);
+                
+            } else {
+                // 分布巻き - 複数スロットにまたがる
+                const slotsPerPole = params.slots / params.poles;
+                const coilPitch = Math.round(params.slots / 3); // 短節巻
+                
+                for (let i = 0; i < params.slots; i++) {
+                    const x = startX + i * slotWidth;
+                    
+                    // スロット枠
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 2;
+                    ctx.fillStyle = '#eee';
+                    ctx.fillRect(x, centerY - slotHeight / 2, slotWidth - 5, slotHeight);
+                    ctx.strokeRect(x, centerY - slotHeight / 2, slotWidth - 5, slotHeight);
+                    
+                    // 各相のコイルを配置（重なり表現）
+                    let layerCount = 0;
+                    const layerHeight = 25;
+                    
+                    for (let phase = 0; phase < 3; phase++) {
+                        const phaseStartSlot = Math.floor(phase * params.slots / 3);
+                        const phaseEndSlot = phaseStartSlot + coilPitch;
+                        
+                        // このスロットが該当相の範囲内か
+                        let isInRange = false;
+                        let isGoing = false; // 行き(⊙)か帰り(⊗)か
+                        
+                        if (i >= phaseStartSlot && i < phaseStartSlot + Math.floor(coilPitch / 2)) {
+                            isInRange = true;
+                            isGoing = true;
+                        } else if (i >= phaseStartSlot + Math.floor(coilPitch / 2) && i < phaseEndSlot) {
+                            isInRange = true;
+                            isGoing = false;
+                        }
+                        
+                        if (isInRange) {
+                            const yPos = centerY - slotHeight / 2 + 15 + layerCount * layerHeight;
+                            
+                            ctx.fillStyle = phaseColors[phase];
+                            ctx.globalAlpha = 0.7;
+                            ctx.fillRect(x + 5, yPos, slotWidth - 15, layerHeight - 3);
+                            ctx.strokeStyle = '#333';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(x + 5, yPos, slotWidth - 15, layerHeight - 3);
+                            ctx.globalAlpha = 1;
+                            
+                            // 電流方向
+                            ctx.fillStyle = 'white';
+                            ctx.font = 'bold 14px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'middle';
+                            ctx.fillText(isGoing ? '⊙' : '⊗', x + slotWidth / 2, yPos + (layerHeight - 3) / 2);
+                            
+                            // 相名（小さく）
+                            ctx.fillStyle = phaseColors[phase];
+                            ctx.font = 'bold 10px Arial';
+                            ctx.fillText(phaseNames[phase], x + slotWidth / 2 - 10, yPos + (layerHeight - 3) / 2);
+                            
+                            layerCount++;
+                        }
+                    }
+                    
+                    // スロット番号
+                    ctx.fillStyle = '#333';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(`#${i + 1}`, x + slotWidth / 2, centerY + slotHeight / 2 + 25);
+                }
+                
+                // 説明
+                ctx.fillStyle = '#333';
+                ctx.font = '13px Arial';
+                ctx.textAlign = 'left';
+                ctx.fillText('⊙: 紙面手前向き電流', 20, height - 60);
+                ctx.fillText('⊗: 紙面奥向き電流', 20, height - 40);
+                ctx.fillText('特徴: 複雑、高コスト、正弦波状分布、低リップル', 20, height - 20);
+            }
+
+            // 凡例
+            const legendX = width - 150;
+            const legendY = 100;
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'left';
+            phaseNames.forEach((name, i) => {
+                ctx.fillStyle = phaseColors[i];
+                ctx.fillRect(legendX, legendY + i * 25, 20, 15);
+                ctx.fillStyle = '#333';
+                ctx.fillText(`${name}相`, legendX + 25, legendY + i * 25 + 12);
+            });
+
+            // 起磁力分布の概念図
+            if (params.slots <= 12) {
+                const mmfY = height - 150;
+                const mmfHeight = 80;
+                const mmfWidth = width - padding * 2;
+                
+                ctx.strokeStyle = '#ddd';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padding, mmfY + mmfHeight / 2);
+                ctx.lineTo(width - padding, mmfY + mmfHeight / 2);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#666';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('起磁力分布（U相）', width / 2, mmfY - 10);
+                
+                // 起磁力分布を描画
+                ctx.strokeStyle = '#f44336';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                
+                const points = 200;
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * Math.PI * 2;
+                    const x = padding + (i / points) * mmfWidth;
+                    
+                    let mmf = 0;
+                    if (params.windingType === 'concentrated') {
+                        // 集中巻き - 階段波状
+                        mmf = Math.sin(angle);
+                        // 高調波成分を追加
+                        mmf += 0.15 * Math.sin(3 * angle);
+                        mmf += 0.08 * Math.sin(5 * angle);
+                    } else {
+                        // 分布巻き - より正弦波に近い
+                        mmf = Math.sin(angle);
+                        mmf += 0.04 * Math.sin(3 * angle);
+                    }
+                    
+                    const y = mmfY + mmfHeight / 2 - mmf * mmfHeight * 0.4;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                // 理想正弦波
+                ctx.strokeStyle = '#aaa';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * Math.PI * 2;
+                    const x = padding + (i / points) * mmfWidth;
+                    const mmf = Math.sin(angle);
+                    const y = mmfY + mmfHeight / 2 - mmf * mmfHeight * 0.4;
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // 凡例
+                ctx.font = '11px Arial';
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#f44336';
+                ctx.fillText('実際の分布', width - padding - 10, mmfY + 15);
+                ctx.fillStyle = '#aaa';
+                ctx.fillText('理想正弦波', width - padding - 10, mmfY + 30);
+            }
+        }
+
+        // モータ構造描画
+        function drawMotor() {
+            const ctx = motorCtx;
+            const width = motorCanvas.width;
+            const height = motorCanvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const outerRadius = Math.min(width, height) * 0.35;
+            const innerRadius = outerRadius * 0.4;
+            const rotorRadius = innerRadius * 0.9;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // ステータ外形
+            ctx.fillStyle = '#ddd';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, outerRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // スロット描画
+            const slotAngle = (Math.PI * 2) / params.slots;
+            ctx.fillStyle = '#fff';
+            
+            for (let i = 0; i < params.slots; i++) {
+                const angle = i * slotAngle + params.angle * 0.01;
+                const slotWidth = slotAngle * 0.4;
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle);
+                
+                // スロット
+                ctx.beginPath();
+                ctx.moveTo(innerRadius, -slotWidth * innerRadius / 2);
+                ctx.lineTo(outerRadius * 0.95, -slotWidth * outerRadius / 4);
+                ctx.lineTo(outerRadius * 0.95, slotWidth * outerRadius / 4);
+                ctx.lineTo(innerRadius, slotWidth * innerRadius / 2);
+                ctx.closePath();
+                ctx.fill();
+                ctx.strokeStyle = '#999';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+
+            // コイル描画
+            const phaseColors = ['#f44336', '#2196f3', '#4caf50'];
+            
+            if (params.windingType === 'concentrated') {
+                // 集中巻き - 各スロットに1相
+                for (let i = 0; i < params.slots; i++) {
+                    const angle = i * slotAngle + params.angle * 0.01;
+                    const phase = i % 3;
+                    
+                    ctx.save();
+                    ctx.translate(centerX, centerY);
+                    ctx.rotate(angle);
+                    
+                    const coilRadius = (innerRadius + outerRadius * 0.95) / 2;
+                    ctx.fillStyle = phaseColors[phase];
+                    ctx.globalAlpha = 0.7;
+                    ctx.beginPath();
+                    ctx.arc(coilRadius, 0, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                    
+                    ctx.restore();
+                }
+            } else {
+                // 分布巻き - 複数スロットにまたがる
+                const coilsPerPhase = Math.floor(params.slots / 3);
+                for (let phase = 0; phase < 3; phase++) {
+                    for (let c = 0; c < coilsPerPhase; c++) {
+                        const slotIndex = phase + c * 3;
+                        const angle = slotIndex * slotAngle + params.angle * 0.01;
+                        
+                        ctx.save();
+                        ctx.translate(centerX, centerY);
+                        ctx.rotate(angle);
+                        
+                        const coilRadius = (innerRadius + outerRadius * 0.95) / 2;
+                        ctx.fillStyle = phaseColors[phase];
+                        ctx.globalAlpha = 0.5 + 0.3 * Math.cos(c * Math.PI / coilsPerPhase);
+                        ctx.beginPath();
+                        ctx.arc(coilRadius, 0, 12, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        
+                        ctx.restore();
+                    }
+                }
+            }
+
+            // ロータ描画
+            ctx.fillStyle = '#555';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, rotorRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 永久磁石描画
+            const poleAngle = (Math.PI * 2) / params.poles;
+            for (let i = 0; i < params.poles; i++) {
+                const angle = i * poleAngle + params.angle * 0.02;
+                const isNorth = i % 2 === 0;
+                
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle);
+                
+                ctx.fillStyle = isNorth ? '#ff6b6b' : '#4ecdc4';
+                ctx.beginPath();
+                ctx.moveTo(0, -poleAngle * rotorRadius * 0.4);
+                ctx.lineTo(rotorRadius * 0.85, -poleAngle * rotorRadius * 0.35);
+                ctx.lineTo(rotorRadius * 0.85, poleAngle * rotorRadius * 0.35);
+                ctx.lineTo(0, poleAngle * rotorRadius * 0.4);
+                ctx.closePath();
+                ctx.fill();
+                
+                // N/S表示
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(isNorth ? 'N' : 'S', rotorRadius * 0.6, 0);
+                
+                ctx.restore();
+            }
+
+            // 中心軸
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 情報表示
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'left';
+            ctx.fillText(`スロット: ${params.slots}  極数: ${params.poles}`, 20, 30);
+            ctx.fillText(`巻き方: ${params.windingType === 'concentrated' ? '集中巻き' : '分布巻き'}`, 20, 55);
+            ctx.fillText(`回転速度: ${params.speed} rpm`, 20, 80);
+
+            // 凡例
+            ctx.font = '14px Arial';
+            const legendY = height - 60;
+            ['U相', 'V相', 'W相'].forEach((label, i) => {
+                ctx.fillStyle = phaseColors[i];
+                ctx.fillRect(20, legendY + i * 20, 15, 15);
+                ctx.fillStyle = '#333';
+                ctx.fillText(label, 40, legendY + i * 20 + 12);
+            });
+        }
+
+        // トルク波形描画
+        function drawTorque() {
+            const ctx = torqueCtx;
+            const width = torqueCanvas.width;
+            const height = torqueCanvas.height;
+            const padding = 50;
+            const graphWidth = width - padding * 2;
+            const graphHeight = height - padding * 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // タイトル
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('トルク波形', width / 2, 25);
+
+            // 軸
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            // グリッド
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (graphHeight * i) / 4;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+
+            // トルク計算とプロット
+            const points = 360;
+            const baseLoad = params.load / 100;
+            
+            // 集中巻きと分布巻きでリップル特性が異なる
+            const rippleAmp = params.windingType === 'concentrated' ? 0.20 : 0.08;
+            const harmonics = params.windingType === 'concentrated' ? 
+                [1, 0.15, 0.08, 0.04] : [1, 0.05, 0.02, 0.01];
+            
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            let minTorque = Infinity;
+            let maxTorque = -Infinity;
+            let avgTorque = 0;
+            
+            for (let i = 0; i <= points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+                const x = padding + (i / points) * graphWidth;
+                
+                // トルク計算(高調波含む)
+                let torque = baseLoad;
+                harmonics.forEach((amp, h) => {
+                    const harmonic = h + 1;
+                    torque += rippleAmp * amp * Math.sin(harmonic * params.poles / 2 * angle + params.angle * 0.1);
+                });
+                
+                avgTorque += torque;
+                minTorque = Math.min(minTorque, torque);
+                maxTorque = Math.max(maxTorque, torque);
+                
+                const y = height - padding - ((torque - baseLoad + rippleAmp) / (rippleAmp * 2)) * graphHeight;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+            
+            avgTorque /= (points + 1);
+
+            // 平均トルクライン
+            ctx.strokeStyle = '#f44336';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            const avgY = height - padding - ((avgTorque - baseLoad + rippleAmp) / (rippleAmp * 2)) * graphHeight;
+            ctx.beginPath();
+            ctx.moveTo(padding, avgY);
+            ctx.lineTo(width - padding, avgY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 軸ラベル
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('電気角 (deg)', width / 2, height - 10);
+            
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('トルク (Nm)', 0, 0);
+            ctx.restore();
+
+            // 目盛り
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let i = 0; i <= 4; i++) {
+                const value = (baseLoad + rippleAmp - (rippleAmp * 2 * i / 4)).toFixed(2);
+                const y = padding + (graphHeight * i) / 4;
+                ctx.fillText(value, padding - 10, y);
+            }
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let i = 0; i <= 4; i++) {
+                const angle = (360 * i / 4).toFixed(0);
+                const x = padding + (graphWidth * i / 4);
+                ctx.fillText(angle, x, height - padding + 10);
+            }
+
+            return {
+                avg: avgTorque,
+                ripple: ((maxTorque - minTorque) / avgTorque * 100)
+            };
+        }
+
+        // 逆起電力波形描画
+        function drawBackEMF() {
+            const ctx = backemfCtx;
+            const width = backemfCanvas.width;
+            const height = backemfCanvas.height;
+            const padding = 50;
+            const graphWidth = width - padding * 2;
+            const graphHeight = height - padding * 2;
+
+            ctx.clearRect(0, 0, width, height);
+
+            // タイトル
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('逆起電力波形 (Back-EMF)', width / 2, 25);
+
+            // 軸
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding, height / 2);
+            ctx.lineTo(width - padding, height / 2);
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.stroke();
+
+            // グリッド
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (graphHeight * i) / 4;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(width - padding, y);
+                ctx.stroke();
+            }
+
+            const points = 360;
+            const phaseColors = ['#f44336', '#2196f3', '#4caf50'];
+            const phaseNames = ['U相', 'V相', 'W相'];
+            
+            // 巻線係数計算
+            const windingFactor = params.windingType === 'concentrated' ? 0.933 : 0.955;
+            
+            // 高調波成分
+            const harmonics = params.windingType === 'concentrated' ?
+                [1, 0, 0.12, 0, 0.08, 0, 0.05] : // 3次、5次、7次...
+                [1, 0, 0.04, 0, 0.02, 0, 0.01];
+            
+            let thd = 0;
+            harmonics.forEach((h, i) => {
+                if (i > 0) thd += h * h;
+            });
+            thd = Math.sqrt(thd) * 100;
+
+            // 3相描画
+            for (let phase = 0; phase < 3; phase++) {
+                ctx.strokeStyle = phaseColors[phase];
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                
+                for (let i = 0; i <= points; i++) {
+                    const angle = (i / points) * Math.PI * 2;
+                    const phaseShift = phase * (Math.PI * 2 / 3);
+                    const x = padding + (i / points) * graphWidth;
+                    
+                    // 逆起電力計算(速度比例、高調波含む)
+                    const speedFactor = params.speed / 1000;
+                    let emf = 0;
+                    harmonics.forEach((amp, h) => {
+                        const harmonic = h + 1;
+                        emf += windingFactor * amp * Math.sin(harmonic * (angle - phaseShift + params.angle * 0.05));
+                    });
+                    emf *= speedFactor;
+                    
+                    const y = height / 2 - (emf * graphHeight / 3);
+                    
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+            }
+
+            // 軸ラベル
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('電気角 (deg)', width / 2, height - 10);
+            
+            ctx.save();
+            ctx.translate(15, height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('電圧 (V)', 0, 0);
+            ctx.restore();
+
+            // 凡例
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            phaseNames.forEach((name, i) => {
+                ctx.fillStyle = phaseColors[i];
+                ctx.fillRect(width - 100, 40 + i * 20, 15, 3);
+                ctx.fillStyle = '#333';
+                ctx.fillText(name, width - 80, 45 + i * 20);
+            });
+
+            return {
+                windingFactor: windingFactor,
+                thd: thd
+            };
+        }
+
+        // 統計更新
+        function updateStats(torqueData, emfData) {
+            document.getElementById('avgTorque').textContent = torqueData.avg.toFixed(2);
+            document.getElementById('torqueRipple').textContent = torqueData.ripple.toFixed(1);
+            document.getElementById('backemfTHD').textContent = emfData.thd.toFixed(1);
+            document.getElementById('windingFactor').textContent = emfData.windingFactor.toFixed(3);
+        }
+
+        // 更新
+        function update() {
+            drawMotor();
+            drawWindingPattern();
+            const torqueData = drawTorque();
+            const emfData = drawBackEMF();
+            updateStats(torqueData, emfData);
+        }
+
+        // アニメーション
+        function animate() {
+            params.angle += params.speed / 100;
+            if (params.angle > 360) params.angle -= 360;
+            
+            drawMotor();
+            
+            requestAnimationFrame(animate);
+        }
+
+        // 初期化
+        update();
+        animate();
+
+        // 定期的にグラフ更新
+        setInterval(() => {
+            drawWindingPattern();
+            const torqueData = drawTorque();
+            const emfData = drawBackEMF();
+            updateStats(torqueData, emfData);
+        }, 100);
+    </script>
+</body>
+</html>

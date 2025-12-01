@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モーター巻線方式比較 - 集中巻き vs 分布巻き</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        h1 {
+            font-size: 3em;
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 40px;
+        }
+        .overview {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+        .simulators {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        .simulator-card {
+            background: rgba(255,255,255,0.95);
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+        .simulator-card:hover {
+            transform: translateY(-5px);
+        }
+        .simulator-card h2 {
+            margin-top: 0;
+            color: #667eea;
+            font-size: 1.5em;
+        }
+        .features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        .features li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4caf50;
+            font-weight: bold;
+        }
+        .demo-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .demo-button:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transform: translateY(-2px);
+        }
+        .comparison-section {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            color: #333;
+        }
+        .comparison-table th {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+        .comparison-table tr:nth-child(even) {
+            background: rgba(0,0,0,0.05);
+        }
+        .project-info {
+            text-align: center;
+            margin-top: 40px;
+            opacity: 0.9;
+        }
+        .project-info a {
+            color: #fff;
+            text-decoration: underline;
+        }
+        .emoji {
+            font-size: 1.2em;
+        }
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            .simulators {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span class="emoji">⚡</span> モーター巻線方式比較教材</h1>
+            <p class="subtitle">集中巻き vs 分布巻き - インタラクティブシミュレーター</p>
+        </header>
+
+        <section class="overview">
+            <h2><span class="emoji">📚</span> プロジェクト概要</h2>
+            <p>
+                このプロジェクトは、ブラシレスモーターの<strong>集中巻き（Concentrated Winding）</strong>と<strong>分布巻き（Distributed Winding）</strong>の特性を
+                インタラクティブに学習できる教材です。2つの異なるAI（Claude、Genspark）によって作成されたシミュレーターを比較できます。
+            </p>
+        </section>
+
+        <section class="simulators">
+            <div class="simulator-card">
+                <h2><span class="emoji">🤖</span> Claude版シミュレーター</h2>
+                <p>詳細な技術解析と教育機能に特化したシミュレーター</p>
+                <ul class="features">
+                    <li>MMF分布とトルクリップル詳細解析</li>
+                    <li>3相逆起電力の高調波成分可視化</li>
+                    <li>巻線係数とTHD計算</li>
+                    <li>詳細な技術ドキュメント付き</li>
+                    <li>GitHub テンプレート完備</li>
+                </ul>
+                <a href="claude_ver/brushless_motor_sim.html" class="demo-button">
+                    <span class="emoji">🚀</span> Claude版デモを開く
+                </a>
+            </div>
+
+            <div class="simulator-card">
+                <h2><span class="emoji">✨</span> Genspark版シミュレーター</h2>
+                <p>直感的でわかりやすいインターフェースのシミュレーター</p>
+                <ul class="features">
+                    <li>インタラクティブなモータ断面図</li>
+                    <li>リアルタイムパラメータ調整</li>
+                    <li>シンプルで分かりやすいUI</li>
+                    <li>効率と銅損の可視化</li>
+                    <li>教育ワークショップ対応</li>
+                </ul>
+                <a href="genspark_ver/brushless_motor_simulator.html" class="demo-button">
+                    <span class="emoji">🎮</span> Genspark版デモを開く
+                </a>
+            </div>
+        </section>
+
+        <section class="comparison-section">
+            <h2><span class="emoji">⚖️</span> 巻線方式の比較</h2>
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>特性</th>
+                        <th>集中巻き</th>
+                        <th>分布巻き</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>製造性</strong></td>
+                        <td>🟢 簡単（巻線が単純）</td>
+                        <td>🟡 複雑（巻線が複雑）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>トルクリップル</strong></td>
+                        <td>🟡 大きい（15-25%）</td>
+                        <td>🟢 小さい（5-10%）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>効率</strong></td>
+                        <td>🟢 高い（端末短い）</td>
+                        <td>🟡 やや低い（端末長い）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>高調波</strong></td>
+                        <td>🟡 多い</td>
+                        <td>🟢 少ない（正弦波的）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>コスト</strong></td>
+                        <td>🟢 低い</td>
+                        <td>🟡 高い</td>
+                    </tr>
+                    <tr>
+                        <td><strong>適用例</strong></td>
+                        <td>小型モータ、コスト重視</td>
+                        <td>高性能モータ、静粛性重視</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="project-info">
+            <h3><span class="emoji">📖</span> 学習リソース</h3>
+            <p>
+                <a href="README.md">📄 プロジェクト詳細</a> | 
+                <a href="https://github.com/lutelute/concentrated_vs_distributed_winding">📂 GitHub リポジトリ</a>
+            </p>
+            <p>
+                <small>
+                    このプロジェクトはモーター設計の教育目的で作成されました。<br>
+                    実際の設計には専門的なエンジニアリングソフトウェアと物理試験が必要です。
+                </small>
+            </p>
+        </section>
+    </div>
+
+    <script>
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add smooth scrolling for better UX
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+
+            // Add animation on scroll (simple version)
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.simulator-card').forEach(card => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+</html>

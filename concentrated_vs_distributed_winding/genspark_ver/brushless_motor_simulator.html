@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ブラシレスモータ シミュレータ - コイル巻き方の影響を体感</title>
+    <style>
+        /* ========== CSS Variables ========== */
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --background-gradient: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            --surface-color: #ffffff;
+            --surface-variant: #f8f9fa;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-accent: #555555;
+            --border-radius: 12px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.16);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ========== Reset and Base Styles ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: var(--background-gradient);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* ========== Layout ========== */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--surface-color);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header .subtitle {
+            color: var(--text-secondary);
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: 400;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: var(--surface-variant);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            transition: var(--transition);
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .panel-title {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--primary-color);
+            position: relative;
+        }
+
+        .panel-title::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--accent-color);
+        }
+
+        /* ========== Form Controls ========== */
+        .control-group {
+            margin-bottom: 28px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            font-weight: 600;
+            color: var(--text-accent);
+            font-size: 0.95rem;
+        }
+
+        .value-badge {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            min-width: 50px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ========== Range Sliders ========== */
+        .range-input {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #e0e0e0, #e0e0e0);
+            outline: none;
+            -webkit-appearance: none;
+            transition: var(--transition);
+        }
+
+        .range-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+            transition: var(--transition);
+        }
+
+        .range-input::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .range-input::-moz-range-thumb {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        /* ========== Radio Buttons ========== */
+        .radio-group {
+            display: flex;
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            border: 2px solid transparent;
+            transition: var(--transition);
+            background: var(--surface-color);
+        }
+
+        .radio-option:hover {
+            background: rgba(102, 126, 234, 0.05);
+            border-color: var(--primary-color);
+        }
+
+        .radio-option input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+
+        .radio-option label {
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .radio-option:has(input:checked) {
+            background: rgba(102, 126, 234, 0.1);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ========== Canvas ========== */
+        .canvas-container {
+            margin-top: 24px;
+        }
+
+        .canvas-wrapper {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .simulation-canvas {
+            display: block;
+            width: 100%;
+            height: 300px;
+            background: var(--surface-color);
+        }
+
+        /* ========== Action Buttons ========== */
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* ========== Statistics Grid ========== */
+        .stats-section {
+            grid-column: 1 / -1;
+            background: var(--surface-variant);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: var(--surface-color);
+            padding: 24px;
+            border-radius: var(--border-radius);
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--primary-color);
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .stat-card .stat-unit {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* ========== Chart Container ========== */
+        .chart-section {
+            grid-column: 1 / -1;
+            margin-top: 30px;
+        }
+
+        .chart-container {
+            background: var(--surface-variant);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .chart-title {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .chart-canvas {
+            display: block;
+            width: 100%;
+            height: 200px;
+            background: var(--surface-color);
+        }
+
+        /* ========== Info Box ========== */
+        .info-section {
+            grid-column: 1 / -1;
+            margin-top: 30px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            border-left: 4px solid var(--primary-color);
+            padding: 24px;
+            border-radius: var(--border-radius);
+        }
+
+        .info-box .info-title {
+            color: var(--primary-color);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .info-box .info-content {
+            color: var(--text-accent);
+            line-height: 1.7;
+        }
+
+        /* ========== Comparison Table ========== */
+        .comparison-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px 20px;
+            text-align: left;
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .comparison-table td {
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .comparison-table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        /* ========== Responsive Design ========== */
+        @media (max-width: 968px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .container {
+                padding: 24px;
+            }
+            
+            .radio-group {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+            
+            .panel {
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ========== Loading Animation ========== */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ========== Accessibility ========== */
+        .btn:focus,
+        .range-input:focus,
+        .radio-option input:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <header class="header">
+            <h1>🔧 ブラシレスモータ シミュレータ</h1>
+            <p class="subtitle">コイルの巻き方がモータ特性に及ぼす影響を体感しよう</p>
+        </header>
+
+        <!-- Main Content Grid -->
+        <div class="main-grid">
+            <!-- Control Panel -->
+            <section class="panel">
+                <h2 class="panel-title">⚙️ パラメータ設定</h2>
+                
+                <!-- Winding Type Selection -->
+                <div class="control-group">
+                    <label class="control-label">巻き方タイプ</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="concentrated" name="windingType" value="concentrated" checked>
+                            <label for="concentrated">集中巻き</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="distributed" name="windingType" value="distributed">
+                            <label for="distributed">分布巻き</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coil Turns -->
+                <div class="control-group">
+                    <label class="control-label">
+                        コイル巻き数
+                        <span class="value-badge" id="turnsValue">100</span>
+                    </label>
+                    <input type="range" id="turns" class="range-input" min="50" max="200" value="100" step="10">
+                </div>
+
+                <!-- Coil Density -->
+                <div class="control-group">
+                    <label class="control-label">
+                        コイル密度 (%)
+                        <span class="value-badge" id="densityValue">80</span>
+                    </label>
+                    <input type="range" id="density" class="range-input" min="50" max="100" value="80" step="5">
+                </div>
+
+                <!-- Slot Count -->
+                <div class="control-group">
+                    <label class="control-label">
+                        スロット数
+                        <span class="value-badge" id="slotsValue">12</span>
+                    </label>
+                    <input type="range" id="slots" class="range-input" min="9" max="18" value="12" step="3">
+                </div>
+
+                <!-- Pole Count -->
+                <div class="control-group">
+                    <label class="control-label">
+                        極数
+                        <span class="value-badge" id="polesValue">8</span>
+                    </label>
+                    <input type="range" id="poles" class="range-input" min="4" max="12" value="8" step="2">
+                </div>
+
+                <!-- Speed -->
+                <div class="control-group">
+                    <label class="control-label">
+                        回転速度 (rpm)
+                        <span class="value-badge" id="speedValue">1000</span>
+                    </label>
+                    <input type="range" id="speed" class="range-input" min="100" max="3000" value="1000" step="100">
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <button id="runBtn" class="btn btn-primary">
+                        ▶️ シミュレーション実行
+                    </button>
+                    <button id="resetBtn" class="btn btn-secondary">
+                        🔄 リセット
+                    </button>
+                </div>
+            </section>
+
+            <!-- Visualization Panel -->
+            <section class="panel">
+                <h2 class="panel-title">🎯 モータ断面図</h2>
+                <div class="canvas-container">
+                    <div class="canvas-wrapper">
+                        <canvas id="motorCanvas" class="simulation-canvas"></canvas>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Statistics Section -->
+        <section class="stats-section">
+            <h2 class="panel-title">📊 性能指標</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">推定トルク</div>
+                    <div class="stat-value" id="torqueValue">1.25</div>
+                    <div class="stat-unit">Nm</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">効率</div>
+                    <div class="stat-value" id="efficiencyValue">91</div>
+                    <div class="stat-unit">%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">トルクリップル</div>
+                    <div class="stat-value" id="rippleValue">8</div>
+                    <div class="stat-unit">%</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">銅損</div>
+                    <div class="stat-value" id="lossValue">12</div>
+                    <div class="stat-unit">W</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chart Section -->
+        <section class="chart-section">
+            <div class="chart-container">
+                <h3 class="chart-title">📈 トルク-速度特性</h3>
+                <div class="chart-wrapper">
+                    <canvas id="chartCanvas" class="chart-canvas"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Information Section -->
+        <section class="info-section">
+            <div class="info-box">
+                <h3 class="info-title">💡 巻き方比較</h3>
+                <div class="info-content">
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>特性</th>
+                                <th>集中巻き</th>
+                                <th>分布巻き</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>製造性</strong></td>
+                                <td>✅ 簡単</td>
+                                <td>⚠️ 複雑</td>
+                            </tr>
+                            <tr>
+                                <td><strong>トルクリップル</strong></td>
+                                <td>⚠️ 大きい (8-12%)</td>
+                                <td>✅ 小さい (3-5%)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>効率</strong></td>
+                                <td>✅ 高い (90-93%)</td>
+                                <td>⚠️ やや低い (85-88%)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>用途</strong></td>
+                                <td>小型・コスト重視</td>
+                                <td>高性能・静粛性重視</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        "use strict";
+
+        // ========== Configuration and State Management ==========
+        class MotorSimulator {
+            constructor() {
+                this.config = {
+                    windingType: 'concentrated',
+                    turns: 100,
+                    density: 80,
+                    slots: 12,
+                    poles: 8,
+                    speed: 1000,
+                    isRunning: false,
+                    rotationAngle: 0
+                };
+
+                this.animationId = null;
+                this.lastTime = 0;
+
+                this.initializeElements();
+                this.setupEventListeners();
+                this.updateSimulation();
+            }
+
+            // ========== DOM Element Initialization ==========
+            initializeElements() {
+                this.elements = {
+                    // Controls
+                    windingInputs: document.querySelectorAll('input[name="windingType"]'),
+                    turnsInput: document.getElementById('turns'),
+                    densityInput: document.getElementById('density'),
+                    slotsInput: document.getElementById('slots'),
+                    polesInput: document.getElementById('poles'),
+                    speedInput: document.getElementById('speed'),
+                    runBtn: document.getElementById('runBtn'),
+                    resetBtn: document.getElementById('resetBtn'),
+
+                    // Value displays
+                    turnsValue: document.getElementById('turnsValue'),
+                    densityValue: document.getElementById('densityValue'),
+                    slotsValue: document.getElementById('slotsValue'),
+                    polesValue: document.getElementById('polesValue'),
+                    speedValue: document.getElementById('speedValue'),
+
+                    // Canvases
+                    motorCanvas: document.getElementById('motorCanvas'),
+                    chartCanvas: document.getElementById('chartCanvas'),
+
+                    // Stats
+                    torqueValue: document.getElementById('torqueValue'),
+                    efficiencyValue: document.getElementById('efficiencyValue'),
+                    rippleValue: document.getElementById('rippleValue'),
+                    lossValue: document.getElementById('lossValue')
+                };
+
+                // Setup canvas contexts
+                this.motorCtx = this.elements.motorCanvas.getContext('2d');
+                this.chartCtx = this.elements.chartCanvas.getContext('2d');
+                this.setupCanvases();
+            }
+
+            // ========== Canvas Setup ==========
+            setupCanvases() {
+                const setupCanvas = (canvas, ctx) => {
+                    const rect = canvas.getBoundingClientRect();
+                    const dpr = window.devicePixelRatio || 1;
+                    
+                    canvas.width = rect.width * dpr;
+                    canvas.height = rect.height * dpr;
+                    
+                    ctx.scale(dpr, dpr);
+                    canvas.style.width = rect.width + 'px';
+                    canvas.style.height = rect.height + 'px';
+                };
+
+                setupCanvas(this.elements.motorCanvas, this.motorCtx);
+                setupCanvas(this.elements.chartCanvas, this.chartCtx);
+
+                // Redraw on resize
+                window.addEventListener('resize', () => {
+                    setupCanvas(this.elements.motorCanvas, this.motorCtx);
+                    setupCanvas(this.elements.chartCanvas, this.chartCtx);
+                    this.updateSimulation();
+                });
+            }
+
+            // ========== Event Listeners Setup ==========
+            setupEventListeners() {
+                // Winding type radio buttons
+                this.elements.windingInputs.forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        this.config.windingType = e.target.value;
+                        this.updateSimulation();
+                    });
+                });
+
+                // Range inputs with value updates
+                const rangeInputs = [
+                    { element: this.elements.turnsInput, config: 'turns', display: this.elements.turnsValue },
+                    { element: this.elements.densityInput, config: 'density', display: this.elements.densityValue },
+                    { element: this.elements.slotsInput, config: 'slots', display: this.elements.slotsValue },
+                    { element: this.elements.polesInput, config: 'poles', display: this.elements.polesValue },
+                    { element: this.elements.speedInput, config: 'speed', display: this.elements.speedValue }
+                ];
+
+                rangeInputs.forEach(({ element, config, display }) => {
+                    element.addEventListener('input', (e) => {
+                        this.config[config] = parseInt(e.target.value);
+                        display.textContent = this.config[config];
+                        this.updateSimulation();
+                    });
+                });
+
+                // Control buttons
+                this.elements.runBtn.addEventListener('click', () => this.toggleSimulation());
+                this.elements.resetBtn.addEventListener('click', () => this.resetSimulation());
+            }
+
+            // ========== Simulation Control ==========
+            toggleSimulation() {
+                this.config.isRunning = !this.config.isRunning;
+                
+                if (this.config.isRunning) {
+                    this.elements.runBtn.innerHTML = '⏸️ 停止';
+                    this.elements.runBtn.classList.remove('btn-primary');
+                    this.elements.runBtn.classList.add('btn-secondary');
+                    this.startAnimation();
+                } else {
+                    this.elements.runBtn.innerHTML = '▶️ シミュレーション実行';
+                    this.elements.runBtn.classList.remove('btn-secondary');
+                    this.elements.runBtn.classList.add('btn-primary');
+                    this.stopAnimation();
+                }
+            }
+
+            startAnimation() {
+                if (this.animationId) return;
+
+                const animate = (currentTime) => {
+                    if (currentTime - this.lastTime >= 50) { // 20 FPS
+                        this.config.rotationAngle += (this.config.speed * 0.1) * Math.PI / 180;
+                        this.drawMotor();
+                        this.lastTime = currentTime;
+                    }
+                    
+                    if (this.config.isRunning) {
+                        this.animationId = requestAnimationFrame(animate);
+                    }
+                };
+
+                this.animationId = requestAnimationFrame(animate);
+            }
+
+            stopAnimation() {
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+            }
+
+            resetSimulation() {
+                this.stopAnimation();
+                
+                // Reset configuration
+                this.config = {
+                    windingType: 'concentrated',
+                    turns: 100,
+                    density: 80,
+                    slots: 12,
+                    poles: 8,
+                    speed: 1000,
+                    isRunning: false,
+                    rotationAngle: 0
+                };
+
+                // Reset UI elements
+                document.getElementById('concentrated').checked = true;
+                this.elements.turnsInput.value = 100;
+                this.elements.densityInput.value = 80;
+                this.elements.slotsInput.value = 12;
+                this.elements.polesInput.value = 8;
+                this.elements.speedInput.value = 1000;
+
+                // Reset displays
+                this.elements.turnsValue.textContent = '100';
+                this.elements.densityValue.textContent = '80';
+                this.elements.slotsValue.textContent = '12';
+                this.elements.polesValue.textContent = '8';
+                this.elements.speedValue.textContent = '1000';
+
+                // Reset button state
+                this.elements.runBtn.innerHTML = '▶️ シミュレーション実行';
+                this.elements.runBtn.classList.remove('btn-secondary');
+                this.elements.runBtn.classList.add('btn-primary');
+
+                this.updateSimulation();
+            }
+
+            // ========== Calculations ==========
+            calculatePerformance() {
+                const { windingType, turns, density, slots, poles, speed } = this.config;
+                
+                // Base calculations with more realistic formulas
+                const slotPoleRatio = slots / poles;
+                const windingFactor = windingType === 'concentrated' ? 0.866 : 0.955;
+                
+                // Torque calculation (simplified)
+                const baseTorque = 1.0;
+                const torque = baseTorque * (turns / 100) * (density / 100) * windingFactor * Math.sqrt(slotPoleRatio);
+                
+                // Efficiency calculation
+                const baseEfficiency = windingType === 'concentrated' ? 92 : 87;
+                const copperLossFactor = Math.pow(turns / 100, 1.5) / (density / 100);
+                const efficiency = Math.max(75, baseEfficiency - copperLossFactor * 5);
+                
+                // Torque ripple calculation
+                const baseRipple = windingType === 'concentrated' ? 10 : 4;
+                const slotRipple = Math.abs(slotPoleRatio - 1.5) * 3;
+                const ripple = Math.max(2, baseRipple + slotRipple);
+                
+                // Copper loss calculation
+                const basePower = 100; // 100W motor
+                const loss = (basePower * (100 - efficiency) / 100) * 0.7; // 70% of losses are copper
+                
+                return {
+                    torque: Math.round(torque * 100) / 100,
+                    efficiency: Math.round(efficiency),
+                    ripple: Math.round(ripple),
+                    loss: Math.round(loss)
+                };
+            }
+
+            // ========== Visualization ==========
+            drawMotor() {
+                const canvas = this.elements.motorCanvas;
+                const ctx = this.motorCtx;
+                
+                ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+                
+                const centerX = canvas.clientWidth / 2;
+                const centerY = canvas.clientHeight / 2;
+                const radius = Math.min(centerX, centerY) - 20;
+                
+                // Draw stator
+                this.drawStator(ctx, centerX, centerY, radius);
+                
+                // Draw rotor
+                this.drawRotor(ctx, centerX, centerY, radius * 0.6);
+                
+                // Draw winding pattern
+                this.drawWindings(ctx, centerX, centerY, radius);
+            }
+
+            drawStator(ctx, centerX, centerY, radius) {
+                const { slots } = this.config;
+                
+                // Stator outline
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Stator slots
+                for (let i = 0; i < slots; i++) {
+                    const angle = (i * 2 * Math.PI) / slots;
+                    const slotX = centerX + Math.cos(angle) * radius * 0.85;
+                    const slotY = centerY + Math.sin(angle) * radius * 0.85;
+                    
+                    ctx.beginPath();
+                    ctx.arc(slotX, slotY, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f0f0f0';
+                    ctx.fill();
+                    ctx.strokeStyle = '#666';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+            }
+
+            drawRotor(ctx, centerX, centerY, radius) {
+                const { poles, rotationAngle } = this.config;
+                
+                // Rotor outline
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                ctx.fillStyle = '#ddd';
+                ctx.fill();
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Permanent magnets
+                for (let i = 0; i < poles; i++) {
+                    const angle = (i * 2 * Math.PI) / poles + rotationAngle;
+                    const magnetX = centerX + Math.cos(angle) * radius * 0.7;
+                    const magnetY = centerY + Math.sin(angle) * radius * 0.7;
+                    
+                    ctx.beginPath();
+                    ctx.arc(magnetX, magnetY, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = i % 2 === 0 ? '#ff4444' : '#4444ff';
+                    ctx.fill();
+                    
+                    // Pole labels
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(i % 2 === 0 ? 'N' : 'S', magnetX, magnetY + 3);
+                }
+            }
+
+            drawWindings(ctx, centerX, centerY, radius) {
+                const { slots, windingType } = this.config;
+                
+                if (windingType === 'concentrated') {
+                    this.drawConcentratedWindings(ctx, centerX, centerY, radius, slots);
+                } else {
+                    this.drawDistributedWindings(ctx, centerX, centerY, radius, slots);
+                }
+            }
+
+            drawConcentratedWindings(ctx, centerX, centerY, radius, slots) {
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1'];
+                
+                for (let i = 0; i < slots; i++) {
+                    const angle = (i * 2 * Math.PI) / slots;
+                    const coilX = centerX + Math.cos(angle) * radius * 0.75;
+                    const coilY = centerY + Math.sin(angle) * radius * 0.75;
+                    
+                    ctx.beginPath();
+                    ctx.arc(coilX, coilY, 12, 0, Math.PI * 2);
+                    ctx.fillStyle = colors[i % 3];
+                    ctx.fill();
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    
+                    // Phase label
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(['U', 'V', 'W'][i % 3], coilX, coilY + 3);
+                }
+            }
+
+            drawDistributedWindings(ctx, centerX, centerY, radius, slots) {
+                const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1'];
+                
+                for (let phase = 0; phase < 3; phase++) {
+                    ctx.strokeStyle = colors[phase];
+                    ctx.lineWidth = 4;
+                    
+                    for (let i = 0; i < slots; i++) {
+                        if ((i + phase) % 3 === 0) {
+                            const angle1 = (i * 2 * Math.PI) / slots;
+                            const angle2 = ((i + 1) * 2 * Math.PI) / slots;
+                            
+                            const x1 = centerX + Math.cos(angle1) * radius * 0.75;
+                            const y1 = centerY + Math.sin(angle1) * radius * 0.75;
+                            const x2 = centerX + Math.cos(angle2) * radius * 0.75;
+                            const y2 = centerY + Math.sin(angle2) * radius * 0.75;
+                            
+                            ctx.beginPath();
+                            ctx.moveTo(x1, y1);
+                            ctx.lineTo(x2, y2);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            drawChart() {
+                const canvas = this.elements.chartCanvas;
+                const ctx = this.chartCtx;
+                
+                ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+                
+                const width = canvas.clientWidth;
+                const height = canvas.clientHeight;
+                const margin = 40;
+                
+                // Draw axes
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(margin, height - margin);
+                ctx.lineTo(width - margin, height - margin);
+                ctx.moveTo(margin, height - margin);
+                ctx.lineTo(margin, margin);
+                ctx.stroke();
+                
+                // Draw torque-speed curve
+                const performance = this.calculatePerformance();
+                const maxSpeed = 3000;
+                const maxTorque = 2.0;
+                
+                ctx.strokeStyle = '#667eea';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                for (let speed = 0; speed <= maxSpeed; speed += 100) {
+                    const x = margin + (speed / maxSpeed) * (width - 2 * margin);
+                    const torque = performance.torque * (1 - speed / maxSpeed * 0.3);
+                    const y = height - margin - (torque / maxTorque) * (height - 2 * margin);
+                    
+                    if (speed === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.stroke();
+                
+                // Current operating point
+                const currentX = margin + (this.config.speed / maxSpeed) * (width - 2 * margin);
+                const currentTorque = performance.torque * (1 - this.config.speed / maxSpeed * 0.3);
+                const currentY = height - margin - (currentTorque / maxTorque) * (height - 2 * margin);
+                
+                ctx.beginPath();
+                ctx.arc(currentX, currentY, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff6b6b';
+                ctx.fill();
+                
+                // Labels
+                ctx.fillStyle = '#666';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('速度 (rpm)', width / 2, height - 10);
+                
+                ctx.save();
+                ctx.translate(15, height / 2);
+                ctx.rotate(-Math.PI / 2);
+                ctx.fillText('トルク (Nm)', 0, 0);
+                ctx.restore();
+            }
+
+            // ========== Main Update Function ==========
+            updateSimulation() {
+                const performance = this.calculatePerformance();
+                
+                // Update performance displays
+                this.elements.torqueValue.textContent = performance.torque;
+                this.elements.efficiencyValue.textContent = performance.efficiency;
+                this.elements.rippleValue.textContent = performance.ripple;
+                this.elements.lossValue.textContent = performance.loss;
+                
+                // Update visualizations
+                this.drawMotor();
+                this.drawChart();
+            }
+        }
+
+        // ========== Initialize Application ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            new MotorSimulator();
+        });
+    </script>
+</body>
+</html>
